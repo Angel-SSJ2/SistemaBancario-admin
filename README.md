@@ -71,10 +71,15 @@ src/users/user.setup.js
 ```
 
 🔐 Autenticación
-Las rutas requieren JWT
-Header:
+El sistema utiliza **JSON Web Token (JWT)** para autenticar a los administradores antes de acceder a las rutas protegidas.
 ```bash
-Authorization: Bearer TOKEN
+Permite a un administrador iniciar sesión y obtener un **token de autenticación**.
+
+| Método | Endpoint |
+|------|------|
+| POST | /admin/v1/auth/login |
+
+URL completa:http://localhost:3001/admin/v1/auth/login
 ```
 
 🧪 Endpoint de prueba
