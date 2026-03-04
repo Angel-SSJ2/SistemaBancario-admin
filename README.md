@@ -82,6 +82,15 @@ Permite a un administrador iniciar sesión y obtener un **token de autenticació
 URL completa:http://localhost:3001/admin/v1/auth/login
 ```
 
+```bash
+## Body de la petición
+```json
+{
+  "email": "admin@banco.com",
+  "password": "ADMINB123"
+}
+```
+
 🧪 Endpoint de prueba
 | Método | Endpoint         |
 | ------ | ---------------- |
