@@ -1,12 +1,13 @@
-'use strict'
-
-import { Router } from "express";
-import { getMyAccount } from "./account.controller.js";
-import { validateJwt } from "../../middlewares/validate-jwt.js"; 
+const { Router } = require('express');
+const { getAccounts, toggleAccountStatus } = require('./account.controller');
+const { validateJWT } = require('../../middlewares/validate-jwt');
 
 const router = Router();
 
-// Solo usuarios logueados pueden ver su propia cuenta
-router.get('/my-account', [validateJwt], getMyAccount);
+router.get('/', validateJWT, getAccounts);
+router.patch('/:id/status', validateJWT, toggleAccountStatus);
 
-export default router;
+// Solo usuarios logueados pueden ver su propia cuenta
+router.get('/my-account', validateJWT, getMyAccount);
+
+module.exports = router;

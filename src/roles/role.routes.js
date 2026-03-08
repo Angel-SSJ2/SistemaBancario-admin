@@ -1,9 +1,10 @@
 const { Router } = require('express');
-const { createDeposit } = require('./deposit.controller');
+const { getRoles, createRole } = require('./role.controller');
 const { validateJWT } = require('../../middlewares/validate-jwt');
 
 const router = Router();
 
-router.post('/', validateJWT, createDeposit);
+router.get('/', validateJWT, getRoles);
+router.post('/', validateJWT, createRole);
 
 module.exports = router;
