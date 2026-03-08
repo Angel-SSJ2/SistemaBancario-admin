@@ -1,5 +1,5 @@
 require('dotenv').config();
-const app = require('./src/app');
+const app = require('./configs/app');
 
 /**
  * Inicia el servidor de Express en el puerto definido en las variables de entorno.
