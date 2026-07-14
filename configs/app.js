@@ -22,6 +22,10 @@ import transactionsRoutes from '../src/transactions/transaction.routes.js';
 import transfersRoutes from '../src/transfers/transfer.routes.js';
 import servicesRoutes from '../src/services/service.routes.js';
 
+import { Deposit } from '../src/deposits/deposit.model.js';
+import { Shopping } from '../src/shoppings/shopping.model.js';
+import { Transaction } from '../src/transactions/transaction.model.js';
+
 const setupMiddlewares = (app) => {
     app.use(helmet());
     app.use(cors(corsOptions));
@@ -54,12 +58,73 @@ const setupRoutes = (app) => {
     app.use(handleErrors);
 };
 
+const syncHistoricalTransactions = async () => {
+    try {
+        console.log('Iniciando sincronización automática de transacciones históricas...');
+        
+        // Sincronizar depósitos
+        const deposits = await Deposit.find();
+        let depCount = 0;
+        for (const dep of deposits) {
+            const exists = await Transaction.findOne({
+                type: 'Deposit',
+                receptorAccount: dep.accountNumber,
+                amount: dep.amount,
+                date: dep.date
+            });
+            if (!exists) {
+                await Transaction.create({
+                    type: 'Deposit',
+                    senderAccount: dep.senderAccount,
+                    receptorAccount: dep.accountNumber,
+                    amount: dep.amount,
+                    description: dep.description || 'Depósito administrativo',
+                    date: dep.date
+                });
+                depCount++;
+            }
+        }
+        
+        // Sincronizar compras
+        const shoppings = await Shopping.find();
+        let shopCount = 0;
+        for (const shop of shoppings) {
+            const exists = await Transaction.findOne({
+                type: 'Payment',
+                senderAccount: shop.accountNumber,
+                amount: shop.amount,
+                date: shop.date
+            });
+            if (!exists) {
+                await Transaction.create({
+                    type: 'Payment',
+                    senderAccount: shop.accountNumber,
+                    receptorAccount: shop.receptorAccount,
+                    amount: shop.amount,
+                    description: shop.description || 'Pago de compras',
+                    date: shop.date
+                });
+                shopCount++;
+            }
+        }
+        
+        if (depCount > 0 || shopCount > 0) {
+            console.log(`Sincronización finalizada: se auto-migraron ${depCount} depósitos y ${shopCount} compras al historial global.`);
+        } else {
+            console.log('Historial de transacciones ya se encuentra totalmente al día.');
+        }
+    } catch (error) {
+        console.error('Error al sincronizar transacciones históricas:', error.message);
+    }
+};
+
 export const initServer = async () => {
     const app = express();
     const PORT = process.env.PORT || 3001;
 
     try {
         await dbConnection();
+        await syncHistoricalTransactions();
         setupMiddlewares(app);
         setupRoutes(app);
 
