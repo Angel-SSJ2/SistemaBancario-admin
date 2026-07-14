@@ -1,9 +1,13 @@
 import { Schema, model } from 'mongoose';
 
 const DepositSchema = new Schema({
+    senderAccount: {
+        type: String,
+        required: [true, 'La cuenta de origen es obligatoria'],
+    },
     accountNumber: {
         type: String,
-        required: [true, 'El número de cuenta es obligatorio'],
+        required: [true, 'La cuenta destino es obligatoria'],
     },
     amount: {
         type: Number,
