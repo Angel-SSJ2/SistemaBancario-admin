@@ -9,6 +9,10 @@ const ShoppingSchema = new Schema({
         type: String,
         required: [true, 'El número de cuenta es obligatorio'],
     },
+    receptorAccount: {
+        type: String,
+        required: [true, 'La cuenta destino es obligatoria'],
+    },
     amount: {
         type: Number,
         required: [true, 'El monto es obligatorio'],

@@ -2,6 +2,7 @@
 
 import { Shopping } from './shopping.model.js';
 import { Account } from '../accounts/account.model.js';
+import { Transaction } from '../transactions/transaction.model.js';
 
 export const getAllShoppings = async (req, res) => {
     try {
@@ -14,13 +15,19 @@ export const getAllShoppings = async (req, res) => {
 
 export const createShopping = async (req, res) => {
     let account;
+    let receptorAccountDoc;
 
     try {
-        const { userId, accountNumber, amount, description } = req.body;
+        const { userId, accountNumber, receptorAccount, amount, description } = req.body;
 
         account = await Account.findOne({ accountNumber, status: true });
         if (!account) {
-            return res.status(404).json({ success: false, message: 'Cuenta no encontrada o inactiva' });
+            return res.status(404).json({ success: false, message: 'Cuenta de origen no encontrada o inactiva' });
+        }
+
+        receptorAccountDoc = await Account.findOne({ accountNumber: receptorAccount, status: true });
+        if (!receptorAccountDoc) {
+            return res.status(404).json({ success: false, message: 'Cuenta destino no encontrada o inactiva' });
         }
 
         const purchaseAmount = Number(amount);
@@ -31,7 +38,20 @@ export const createShopping = async (req, res) => {
         account.balance -= purchaseAmount;
         await account.save();
 
-        const shopping = await Shopping.create({ userId, accountNumber, amount: purchaseAmount, description });
+        receptorAccountDoc.balance += purchaseAmount;
+        await receptorAccountDoc.save();
+
+        const shopping = await Shopping.create({ userId, accountNumber, receptorAccount, amount: purchaseAmount, description });
+
+        // Registrar en la colección de transacciones para que aparezca en el historial global
+        await Transaction.create({
+            type: 'Payment',
+            senderAccount: accountNumber,
+            receptorAccount: receptorAccount,
+            amount: purchaseAmount,
+            description: description || 'Pago de compras',
+            date: shopping.date
+        });
 
         res.status(201).json({
             success: true,
@@ -45,6 +65,10 @@ export const createShopping = async (req, res) => {
         if (account) {
             account.balance += Number(req.body.amount || 0);
             await account.save().catch(() => {});
+        }
+        if (receptorAccountDoc) {
+            receptorAccountDoc.balance -= Number(req.body.amount || 0);
+            await receptorAccountDoc.save().catch(() => {});
         }
         res.status(500).json({ success: false, message: 'Error al crear compra', error: error.message });
     }
@@ -63,6 +87,12 @@ export const deleteShopping = async (req, res) => {
         if (account) {
             account.balance += shopping.amount;
             await account.save();
+        }
+
+        const receptorAccountDoc = await Account.findOne({ accountNumber: shopping.receptorAccount, status: true });
+        if (receptorAccountDoc) {
+            receptorAccountDoc.balance -= shopping.amount;
+            await receptorAccountDoc.save();
         }
 
         shopping.status = 'Anulado';
