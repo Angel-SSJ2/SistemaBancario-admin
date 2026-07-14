@@ -2,13 +2,14 @@
 
 import { User } from './user.model.js';
 import { Account } from '../accounts/account.model.js';
+import crypto from 'crypto';
 
 const generateAccountNumber = () =>
     Math.floor(1000000000 + Math.random() * 9000000000).toString();
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({ status: true }).select('-__v');
+        const users = await User.find().select('-__v');
         res.status(200).json({ success: true, total: users.length, users });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error al obtener usuarios', error: error.message });
@@ -36,7 +37,7 @@ export const createUser = async (req, res) => {
             return res.status(409).json({ success: false, message: 'El correo ya está registrado' });
         }
 
-        const newUser = await User.create({ name, surname, email, role: role || 'Client' });
+        const newUser = await User.create({ _id: crypto.randomUUID(), name, surname, email, role: role || 'Client' });
 
         const accountNumber = generateAccountNumber();
         await Account.create({
@@ -108,5 +109,30 @@ export const addExtraAccount = async (req, res) => {
         res.status(201).json({ success: true, message: 'Cuenta adicional creada', account });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Error al agregar cuenta adicional', error: error.message });
+    }
+};
+
+export const syncUser = async (req, res) => {
+    try {
+        const { id, name, surname, email, role } = req.body;
+        
+        const existing = await User.findOne({ email });
+        if (existing) {
+            return res.status(200).json({ success: true, message: 'Usuario ya existía' });
+        }
+
+        const newUser = await User.create({ _id: id, name, surname, email, role: role || 'Client' });
+        
+        const accountNumber = generateAccountNumber();
+        await Account.create({
+            accountNumber,
+            userId: newUser._id.toString(),
+            balance: 0,
+            accountType: 'Ahorro',
+        });
+
+        res.status(201).json({ success: true, user: newUser });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 };

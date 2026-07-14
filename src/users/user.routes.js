@@ -6,6 +6,7 @@ import {
     updateUser,
     deleteUser,
     addExtraAccount,
+    syncUser,
 } from './user.controller.js';
 import { validateJWT } from '../../middlewares/validate-jwt.js';
 import { validateCreateUser, validateUpdateUser, validateUserId } from '../../middlewares/users-validator.js';
@@ -18,5 +19,6 @@ router.post('/', validateJWT, validateCreateUser, createUser);
 router.post('/account', validateJWT, addExtraAccount);
 router.put('/:id', validateJWT, validateUpdateUser, updateUser);
 router.delete('/:id', validateJWT, validateUserId, deleteUser);
+router.post('/sync', syncUser);
 
 export default router;
